@@ -97,19 +97,18 @@
              args (map second pairs)
              args-vals (map #(my-eval % env) args)
              let-as-lambda (make-procedure params let-body env)]
-        (my-apply let-as-lambda args-vals)
-        )
+        (my-apply let-as-lambda args-vals env))
 
       'application
       (let* [procedure (my-eval (first exp) env)
              args-exprs (rest exp)
              args-vals (map #(my-eval % env) args-exprs)]
-        (my-apply procedure args-vals))
+        (my-apply procedure args-vals env))
 
       (err (str "uknown exp type: " exp ", " type)))))
 
 
-(defn my-apply [procedure args]
+(defn my-apply [procedure args caller-env]
   (if (not (contains? procedure :procedure))
     (err ("application: not a procedure: " procedure)))
 
@@ -121,7 +120,7 @@
     (let* [proc-params (:params procedure)
            proc-body (:body procedure)
            proc-env (:env procedure)
-           apply-env (create-frame-pointing-to proc-env)]
+           apply-env (create-frame-pointing-to caller-env)]
       (if (not (= (count proc-params) (count args)))
         (err "wrong number of arguments: " args " ;; params: " proc-params))
       (doall (map (fn [param arg]
@@ -163,3 +162,15 @@ global-env...
 (my-eval-wrap (parse "(let ((x 3)) x)") global-env)
 (my-eval-wrap (parse "(let ((x 3) (y 5)) (+ x y))") global-env)
 (my-eval-wrap (parse "(let ((x 3) (y 5)) (my-proc 100 200))") global-env)
+
+
+;; test dynamic binding
+
+(my-eval-wrap (parse "(define x 3)") global-env)
+(my-eval-wrap (parse "(define print-x (lambda () x))") global-env)
+
+(my-eval-wrap (parse "(print-x)") global-env)
+;; ^ from global -> x=3
+
+(my-eval-wrap (parse "(let ((x 5)) (print-x))") global-env)
+;; ^from last definition -> x=5
