@@ -71,3 +71,11 @@ definition of the variable.
 - let special form
 
   `(let ((binding1 val1) (binding2 val2)) body)`
+
+
+## TODO
+
+- control flow forms
+- multi-line input in REPL
+- error handling
+- own parser
