@@ -71,6 +71,9 @@ definition of the variable.
 - let special form
 
   `(let ((binding1 val1) (binding2 val2)) body)`
+- quoting / unquoting
+
+  `(unquote '(+ 2 2))`
 
 
 ## TODO

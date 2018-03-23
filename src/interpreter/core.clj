@@ -77,9 +77,12 @@
           'define 'definition
           'lambda 'make-lambda
           'let 'let
+          'unquote 'unquoting
+          'quote 'quoting
           'application)
         (symbol? exp) 'variable
         (number? exp) 'number
+        (= (first exp) 'quote) 'quote
         (string? exp) 'string
         :else 'uknown-exp-type))
 
@@ -92,6 +95,14 @@
     (condp = type
       'variable (find-variable env exp)
       'number exp
+      'quote (second exp)
+
+      'quoting (rest exp)
+
+      'unquoting
+      (let [quoted-expr (second exp)
+            expr (my-eval quoted-expr env)]
+        (my-eval expr env))
 
       'definition
       (let* [name (second exp)
