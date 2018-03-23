@@ -8,28 +8,38 @@
   (println "got " (count args) "args")
   (println "those are: " args))
 
-(remove-method print-method clojure.lang.IDeref)
 
 (defn parse [raw]
   (read-string raw))
 
-
 (defn err [msg]
   (throw (Exception. msg)))
+
+
+;; variables
 
 (defn find-variable [env var]
   (cond
     (contains? @env (keyword var)) (get @env (keyword var))
     (contains? @env :next-env) (find-variable (:next-env @env) var)
-    :else (throw (Exception. (str "variable " var " not defined")))
-    ))
+    :else (throw (Exception. (str "variable " var " not defined")))))
 
+(defn define-variable [name env value]
+  (swap! env assoc (keyword name) value))
+
+;; frames, environments
 
 (defn create-frame [next-env]
   (let [env (atom {})]
     (if next-env
       (swap! env assoc :next-env next-env))
     env))
+
+(def test-global-env
+  (atom {:x 3
+         :+ {:procedure true :primitive true :proc +}}))
+
+;; procedures
 
 (defn make-procedure [params-list proc-body env]
   {:procedure true
@@ -38,12 +48,7 @@
    :body proc-body
    :env env})
 
-(defn define-variable [name env value]
-  (swap! env assoc (keyword name) value))
-
-(def test-global-env
-  (atom {:x 3
-         :+ {:procedure true :primitive true :proc +}}))
+;; expressions
 
 (defn exp-type [exp]
   (cond (list? exp)
@@ -55,14 +60,14 @@
         (number? exp) 'number
         :else 'uknown-exp-type))
 
+;; INTERPRETER
+
 (declare my-apply)
 
 (defn my-eval [exp env]
   (let [type (exp-type exp)]
     (condp = type
-
       'variable (find-variable env exp)
-
       'number exp
 
       'definition
@@ -88,7 +93,6 @@
 
 
 (defn my-apply [procedure args]
-
   (if (not (contains? procedure :procedure))
     (err ("application: not a procedure: " procedure)))
 
@@ -110,9 +114,10 @@
       (my-eval proc-body apply-env))))
 
 
+;; PLAYGROUND
 
 (defn my-eval-wrap [& args]
-  "Avoid printing return value.
+  "Avoid printing return value when possibly harmful.
 
 When my-eval returns a map, it might contain circular references. REPL
 will overflow the stack during an attempt to print that map.
@@ -130,11 +135,10 @@ global-env...
       result
       'ok)))
 
+
 (my-eval-wrap (parse "(+ 2 3)") test-global-env)
 (my-eval-wrap (parse "(define x 6)") test-global-env)
 (my-eval-wrap (parse "(lambda (x y) (+ x y))") test-global-env)
 (my-eval-wrap (parse "(define my-test (+ 3 4))") test-global-env)
-(my-eval (parse "(define my-proc (lambda (x y) (+ x y)))") test-global-env)
-(my-eval (parse "(my-proc 3 4)") test-global-env)
-
-test-global-env
+(my-eval-wrap (parse "(define my-proc (lambda (x y) (+ x y)))") test-global-env)
+(my-eval-wrap (parse "(my-proc 3 4)") test-global-env)
