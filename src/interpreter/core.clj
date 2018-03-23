@@ -111,38 +111,33 @@
         (my-eval quoted-expr env))
 
       'if
-      (let [[if-symbol pred-expr true-expr false-expr] exp]
+      (let [[_ pred-expr true-expr false-expr] exp]
         (if (my-eval pred-expr env)
           (my-eval true-expr env)
           (my-eval false-expr env)))
 
       'definition
-      (let* [name (second exp)
-             body (nth exp 2)
-             value (my-eval body env)
-             ]
-        (define-variable name env value)
+      (let [[_ name expr] exp]
+        (define-variable name env (my-eval expr env))
         'defined)
 
       'make-lambda
-      (let [args-list (second exp)
-            proc-body (nth exp 2)]
+      (let [[_ args-list proc-body] exp]
         (make-procedure args-list proc-body env))
 
       'let
-      (let* [pairs (second exp)
-             let-body (nth exp 2)
-             params (map first pairs)
-             args (map second pairs)
-             args-vals (map #(my-eval % env) args)
-             let-as-lambda (make-procedure params let-body env)]
-        (my-apply let-as-lambda args-vals env))
+      (let [[_ pairs let-body] exp]
+        (let* [params (map first pairs)
+               args (map second pairs)
+               args-vals (map #(my-eval % env) args)
+               let-procedure (make-procedure params let-body env)]
+          (my-apply let-procedure args-vals env)))
 
       'application
-      (let* [procedure (my-eval (first exp) env)
-             args-exprs (rest exp)
-             args-vals (map #(my-eval % env) args-exprs)]
-        (my-apply procedure args-vals env))
+      (let [[proc-expr & args-exprs] exp]
+        (let [procedure (my-eval proc-expr env)
+              args-vals (map #(my-eval % env) args-exprs)]
+          (my-apply procedure args-vals env)))
 
       (err (str "uknown exp type: " exp ", " type)))))
 
@@ -156,10 +151,10 @@
     (apply (:proc procedure) args)
 
     (contains? procedure :compound)
-    (let* [proc-params (:params procedure)
-           proc-body (:body procedure)
-           proc-env (:env procedure)
-           apply-env (create-frame-pointing-to caller-env)]
+    (let [{proc-params :params
+           proc-body :body
+           proc-env :env} procedure
+          apply-env (create-frame-pointing-to caller-env)]
       (if (not (= (count proc-params) (count args)))
         (err "wrong number of arguments: " args " ;; params: " proc-params))
       (doall (map (fn [param arg]
@@ -169,7 +164,7 @@
       (my-eval proc-body apply-env))))
 
 
-;; PLAYGROUND
+;; INTERFACE
 
 (defn my-eval-wrap [& args]
   "Avoid printing return value when possibly harmful.
@@ -191,25 +186,28 @@ global-env...
       'ok)))
 
 
-(my-eval-wrap (parse "(+ 2 3)") global-env)
-(my-eval-wrap (parse "(define x 6)") global-env)
-(my-eval-wrap (parse "(lambda (x y) (+ x y))") global-env)
-(my-eval-wrap (parse "(define my-test (+ 3 4))") global-env)
-(my-eval-wrap (parse "(define my-proc (lambda (x y) (+ x y)))") global-env)
-(my-eval-wrap (parse "(my-proc 3 4)") global-env)
 
-(my-eval-wrap (parse "(let ((x 3)) x)") global-env)
-(my-eval-wrap (parse "(let ((x 3) (y 5)) (+ x y))") global-env)
-(my-eval-wrap (parse "(let ((x 3) (y 5)) (my-proc 100 200))") global-env)
+;; PLAYGROUND
+
+;; (my-eval-wrap (parse "(+ 2 3)") global-env)
+;; (my-eval-wrap (parse "(define x 6)") global-env)
+;; (my-eval-wrap (parse "(lambda (x y) (+ x y))") global-env)
+;; (my-eval-wrap (parse "(define my-test (+ 3 4))") global-env)
+;; (my-eval-wrap (parse "(define my-proc (lambda (x y) (+ x y)))") global-env)
+;; (my-eval-wrap (parse "(my-proc 3 4)") global-env)
+
+;; (my-eval-wrap (parse "(let ((x 3)) x)") global-env)
+;; (my-eval-wrap (parse "(let ((x 3) (y 5)) (+ x y))") global-env)
+;; (my-eval-wrap (parse "(let ((x 3) (y 5)) (my-proc 100 200))") global-env)
 
 
-;; test dynamic binding
+;; ;; test dynamic binding
 
-(my-eval-wrap (parse "(define x 3)") global-env)
-(my-eval-wrap (parse "(define print-x (lambda () x))") global-env)
+;; (my-eval-wrap (parse "(define x 3)") global-env)
+;; (my-eval-wrap (parse "(define print-x (lambda () x))") global-env)
 
-(my-eval-wrap (parse "(print-x)") global-env)
-;; ^ from global -> x=3
+;; (my-eval-wrap (parse "(print-x)") global-env)
+;; ;; ^ from global -> x=3
 
-(my-eval-wrap (parse "(let ((x 5)) (print-x))") global-env)
-;; ^from last definition -> x=5
+;; (my-eval-wrap (parse "(let ((x 5)) (print-x))") global-env)
+;; ;; ^from last definition -> x=5
