@@ -1,9 +1,9 @@
 (ns interpreter.core
   (:gen-class))
 
-(declare parse)
 (declare my-eval-wrap)
 (declare global-env)
+(declare interpret)
 
 (defn -main
   [& args]
@@ -11,12 +11,14 @@
   (println "READY ...")
   (doseq [line (line-seq (java.io.BufferedReader. *in*))]
     (println "got:" line)
-    (let [result (my-eval-wrap (parse line) global-env)]
-      (println "result:" result))))
-
+    (println "result: " (interpret line))))
 
 (defn parse [raw]
   (read-string raw))
+
+(defn interpret [some-str]
+  (let [parsed (parse some-str)]
+    (my-eval-wrap parsed global-env)))
 
 (defn err [msg]
   (throw (Exception. msg)))
@@ -53,6 +55,14 @@
    :params params-list
    :body proc-body
    :env env})
+
+(defn make-primitive-procedure [proc]
+  {:procedure true
+   :primitive true
+   :proc proc})
+
+(doseq [proc '(+ - * /)]
+  (define-variable (keyword proc) global-env (make-primitive-procedure (eval proc))))
 
 ;; expressions
 
