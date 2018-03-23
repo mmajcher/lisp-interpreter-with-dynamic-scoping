@@ -74,10 +74,17 @@ definition of the variable.
 - quoting / unquoting
 
   `(unquote '(+ 2 2))`
+- if
+
+  `(if (> x y) true-val false-val)`
+- built-in predicates:
+
+  `= not > < >= <=`
+
 
 
 ## TODO
 
-- control flow forms
+- ~~control flow forms~~
 - multi-line input in REPL
 - own parser

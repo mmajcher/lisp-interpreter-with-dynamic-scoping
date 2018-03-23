@@ -65,8 +65,13 @@
    :primitive true
    :proc proc})
 
-(doseq [proc '(+ - * /)]
-  (define-variable (keyword proc) global-env (make-primitive-procedure (eval proc))))
+(defn register-primitive-procedure [proc-symbol]
+  (let [var-name (keyword proc-symbol)
+        procedure (make-primitive-procedure (eval proc-symbol))]
+   (define-variable var-name global-env procedure)))
+
+(doall (map register-primitive-procedure '(+ - * /)))
+(doall (map register-primitive-procedure '( = not > < >= <=)))
 
 ;; expressions
 
@@ -79,6 +84,7 @@
           'let 'let
           'unquote 'unquoting
           'quote 'quoting
+          'if 'if
           'application)
         (symbol? exp) 'variable
         (number? exp) 'number
@@ -95,14 +101,20 @@
     (condp = type
       'variable (find-variable env exp)
       'number exp
-      'quote (second exp)
+      'quote (rest exp)
 
       'quoting (rest exp)
 
       'unquoting
-      (let [quoted-expr (second exp)
-            expr (my-eval quoted-expr env)]
-        (my-eval expr env))
+      (let* [quote-cell (second exp)
+             quoted-expr (second quote-cell)]
+        (my-eval quoted-expr env))
+
+      'if
+      (let [[if-symbol pred-expr true-expr false-expr] exp]
+        (if (my-eval pred-expr env)
+          (my-eval true-expr env)
+          (my-eval false-expr env)))
 
       'definition
       (let* [name (second exp)
