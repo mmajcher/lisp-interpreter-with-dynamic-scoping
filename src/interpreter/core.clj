@@ -1,12 +1,18 @@
 (ns interpreter.core
   (:gen-class))
 
+(declare parse)
+(declare my-eval-wrap)
+(declare global-env)
+
 (defn -main
-  "I don't do a whole lot ... yet."
   [& args]
-  (println "Hello, World!")
-  (println "got " (count args) "args")
-  (println "those are: " args))
+
+  (println "READY ...")
+  (doseq [line (line-seq (java.io.BufferedReader. *in*))]
+    (println "got:" line)
+    (let [result (my-eval-wrap (parse line) global-env)]
+      (println "result:" result))))
 
 
 (defn parse [raw]
@@ -35,7 +41,7 @@
       (swap! env assoc :next-env next-env))
     env))
 
-(def test-global-env
+(def global-env
   (atom {:x 3
          :+ {:procedure true :primitive true :proc +}}))
 
@@ -147,13 +153,13 @@ global-env...
       'ok)))
 
 
-(my-eval-wrap (parse "(+ 2 3)") test-global-env)
-(my-eval-wrap (parse "(define x 6)") test-global-env)
-(my-eval-wrap (parse "(lambda (x y) (+ x y))") test-global-env)
-(my-eval-wrap (parse "(define my-test (+ 3 4))") test-global-env)
-(my-eval-wrap (parse "(define my-proc (lambda (x y) (+ x y)))") test-global-env)
-(my-eval-wrap (parse "(my-proc 3 4)") test-global-env)
+(my-eval-wrap (parse "(+ 2 3)") global-env)
+(my-eval-wrap (parse "(define x 6)") global-env)
+(my-eval-wrap (parse "(lambda (x y) (+ x y))") global-env)
+(my-eval-wrap (parse "(define my-test (+ 3 4))") global-env)
+(my-eval-wrap (parse "(define my-proc (lambda (x y) (+ x y)))") global-env)
+(my-eval-wrap (parse "(my-proc 3 4)") global-env)
 
-(my-eval-wrap (parse "(let ((x 3)) x)") test-global-env)
-(my-eval-wrap (parse "(let ((x 3) (y 5)) (+ x y))") test-global-env)
-(my-eval-wrap (parse "(let ((x 3) (y 5)) (my-proc 100 200))") test-global-env)
+(my-eval-wrap (parse "(let ((x 3)) x)") global-env)
+(my-eval-wrap (parse "(let ((x 3) (y 5)) (+ x y))") global-env)
+(my-eval-wrap (parse "(let ((x 3) (y 5)) (my-proc 100 200))") global-env)
