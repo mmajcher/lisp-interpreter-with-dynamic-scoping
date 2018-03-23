@@ -77,5 +77,4 @@ definition of the variable.
 
 - control flow forms
 - multi-line input in REPL
-- error handling
 - own parser

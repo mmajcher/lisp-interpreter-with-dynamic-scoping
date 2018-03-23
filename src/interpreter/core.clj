@@ -17,8 +17,11 @@
   (read-string raw))
 
 (defn interpret [some-str]
-  (let [parsed (parse some-str)]
-    (my-eval-wrap parsed global-env)))
+  (try
+    (let [parsed (parse some-str)]
+      (my-eval-wrap parsed global-env))
+    (catch Exception e
+      (let [] (println (.getMessage e))))))
 
 (defn err [msg]
   (throw (Exception. msg)))
@@ -45,6 +48,7 @@
 
 (def global-env
   (atom {:x 3
+         :none "none"
          :+ {:procedure true :primitive true :proc +}}))
 
 ;; procedures
@@ -67,7 +71,8 @@
 ;; expressions
 
 (defn exp-type [exp]
-  (cond (list? exp)
+  (cond (and (list? exp) (empty? exp)) 'empty-list
+        (list? exp)
         (condp = (first exp)
           'define 'definition
           'lambda 'make-lambda
@@ -75,6 +80,7 @@
           'application)
         (symbol? exp) 'variable
         (number? exp) 'number
+        (string? exp) 'string
         :else 'uknown-exp-type))
 
 ;; INTERPRETER
