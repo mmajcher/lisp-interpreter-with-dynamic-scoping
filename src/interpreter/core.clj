@@ -29,7 +29,7 @@
 
 ;; frames, environments
 
-(defn create-frame [next-env]
+(defn create-frame-pointing-to [next-env]
   (let [env (atom {})]
     (if next-env
       (swap! env assoc :next-env next-env))
@@ -55,6 +55,7 @@
         (condp = (first exp)
           'define 'definition
           'lambda 'make-lambda
+          'let 'let
           'application)
         (symbol? exp) 'variable
         (number? exp) 'number
@@ -83,6 +84,16 @@
             proc-body (nth exp 2)]
         (make-procedure args-list proc-body env))
 
+      'let
+      (let* [pairs (second exp)
+             let-body (nth exp 2)
+             params (map first pairs)
+             args (map second pairs)
+             args-vals (map #(my-eval % env) args)
+             let-as-lambda (make-procedure params let-body env)]
+        (my-apply let-as-lambda args-vals)
+        )
+
       'application
       (let* [procedure (my-eval (first exp) env)
              args-exprs (rest exp)
@@ -104,7 +115,7 @@
     (let* [proc-params (:params procedure)
            proc-body (:body procedure)
            proc-env (:env procedure)
-           apply-env (create-frame proc-env)]
+           apply-env (create-frame-pointing-to proc-env)]
       (if (not (= (count proc-params) (count args)))
         (err "wrong number of arguments: " args " ;; params: " proc-params))
       (doall (map (fn [param arg]
@@ -142,3 +153,7 @@ global-env...
 (my-eval-wrap (parse "(define my-test (+ 3 4))") test-global-env)
 (my-eval-wrap (parse "(define my-proc (lambda (x y) (+ x y)))") test-global-env)
 (my-eval-wrap (parse "(my-proc 3 4)") test-global-env)
+
+(my-eval-wrap (parse "(let ((x 3)) x)") test-global-env)
+(my-eval-wrap (parse "(let ((x 3) (y 5)) (+ x y))") test-global-env)
+(my-eval-wrap (parse "(let ((x 3) (y 5)) (my-proc 100 200))") test-global-env)
