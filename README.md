@@ -49,6 +49,11 @@ definition of the variable.
 (let ((x 5)) print-x)
 => 5
 
+
+;; dynamic scoping fun
+(define square (lambda (x) (* x x)))
+(let ((* +)) (square 3))
+=> 6
 ```
 
 ### Language elements
