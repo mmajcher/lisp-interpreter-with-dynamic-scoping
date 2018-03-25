@@ -11,15 +11,15 @@
   (println "READY ...")
   (doseq [line (line-seq (java.io.BufferedReader. *in*))]
     (println "got:" line)
-    (println "result: " (interpret line))))
+    (println "result: " (interpret line global-env))))
 
 (defn parse [raw]
   (read-string raw))
 
-(defn interpret [some-str]
+(defn interpret [some-str env]
   (try
     (let [parsed (parse some-str)]
-      (my-eval-wrap parsed global-env))
+      (str (my-eval-wrap parsed env)))
     (catch Exception e
       (let [] (println (.getMessage e))))))
 
@@ -38,19 +38,6 @@
 (defn define-variable [name env value]
   (swap! env assoc (keyword name) value))
 
-;; frames, environments
-
-(defn create-frame-pointing-to [next-env]
-  (let [env (atom {})]
-    (if next-env
-      (swap! env assoc :next-env next-env))
-    env))
-
-(def global-env
-  (atom {:x 3
-         :none "none"
-         :+ {:procedure true :primitive true :proc +}}))
-
 ;; procedures
 
 (defn make-procedure [params-list proc-body env]
@@ -65,13 +52,26 @@
    :primitive true
    :proc proc})
 
-(defn register-primitive-procedure [proc-symbol]
+(defn register-primitive-procedure [proc-symbol env]
   (let [var-name (keyword proc-symbol)
         procedure (make-primitive-procedure (eval proc-symbol))]
-   (define-variable var-name global-env procedure)))
+    (define-variable var-name env procedure)))
 
-(doall (map register-primitive-procedure '(+ - * /)))
-(doall (map register-primitive-procedure '( = not > < >= <=)))
+;; frames, environments
+
+(defn create-frame-pointing-to [next-env]
+  (let [env (atom {})]
+    (if next-env
+      (swap! env assoc :next-env next-env))
+    env))
+
+(defn get-clean-env []
+  (let [env (create-frame-pointing-to nil)]
+    (doall (map #(register-primitive-procedure % env) '(+ - * /)))
+    (doall (map #(register-primitive-procedure % env) '( = not > < >= <=)))
+    env))
+
+(def global-env (get-clean-env))
 
 ;; expressions
 
