@@ -169,16 +169,16 @@
 (defn my-eval-wrap [& args]
   "Avoid printing return value when possibly harmful.
 
-When my-eval returns a map, it might contain circular references. REPL
-will overflow the stack during an attempt to print that map.
+When my-eval returns an environment map, it might contain circular
+references. REPL will overflow the stack during an attempt to print
+that map.
 
 E.g.:
-(define proc (x) (+ 2 x)) in global-env results in:
+(define proc (lambda (x) (+ 2 x))) in global-env results in:
 {... :proc-body (+ 2 x) ... :proc-env global-env}
 
-REPL will attempt to print contents of global-env. After definition it
-contains a reference to proc, which in turns contains a reference to
-global-env...
+global-env now has a reference to proc and proc references global-env.
+We'd better not try to print that.
 "
   (let [result (apply my-eval args)]
     (if (not (map? result))

@@ -6,7 +6,10 @@ An attempt to construct a simple LISP interpreter.
 
 ### How to start the REPL
 
-Using Leiningen: `lein run` (you need both Clojure and Leiningen installed)
+~~Using Leiningen: `lein run` (you need both Clojure and Leiningen installed)~~
+
+1. Download standalone jar file (^ use _release_ link above).
+2. `java -jar interpreter-standalone.jar`
 
 ## Language
 
