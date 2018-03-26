@@ -8,11 +8,11 @@
 
 It turns given forms into strings, evaluates them and returns result
 of the last evaluated form."
-  (let [forms (map str forms)]
-    `(let [~'clean-env (get-clean-env)]
-       (last (mapv
-              (fn [~'expr] (~'interpret ~'expr ~'clean-env))
-              ~forms)))))
+  (let [forms (map str forms)
+        clean-env (get-clean-env)]
+    (last (map
+           (fn [expr] (interpret expr clean-env))
+           forms))))
 
 
 (deftest interpreter-test
