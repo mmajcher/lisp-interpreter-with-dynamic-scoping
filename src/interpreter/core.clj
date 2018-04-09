@@ -1,5 +1,6 @@
 (ns interpreter.core
-  (:gen-class))
+  (:gen-class)
+  (require [interpreter.repl-reader :as repl-reader]))
 
 (declare my-eval-wrap)
 (declare global-env)
@@ -9,9 +10,23 @@
   [& args]
 
   (println "READY ...")
-  (doseq [line (line-seq (java.io.BufferedReader. *in*))]
-    (println "got:" line)
-    (println "result: " (interpret line global-env))))
+
+  (defn should-read-from-file? []
+    (> (count args) 0))
+
+  (defn read-from-file-filename []
+    (first args))
+
+  (if (should-read-from-file?)
+    ;; file
+    (let [statements (slurp (read-from-file-filename))]
+      (let [result (interpret statements global-env)]
+        (println "result: " result)))
+    ;; repl
+    (while true
+      (let [stmt (repl-reader/get-statement)]
+        (println "got:" stmt)
+        (println "result: " (interpret stmt global-env))))))
 
 (defn parse [raw]
   (read-string raw))
