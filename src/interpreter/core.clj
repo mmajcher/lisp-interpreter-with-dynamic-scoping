@@ -185,29 +185,3 @@ We'd better not try to print that.
       result
       'ok)))
 
-
-
-;; PLAYGROUND
-
-;; (my-eval-wrap (parse "(+ 2 3)") global-env)
-;; (my-eval-wrap (parse "(define x 6)") global-env)
-;; (my-eval-wrap (parse "(lambda (x y) (+ x y))") global-env)
-;; (my-eval-wrap (parse "(define my-test (+ 3 4))") global-env)
-;; (my-eval-wrap (parse "(define my-proc (lambda (x y) (+ x y)))") global-env)
-;; (my-eval-wrap (parse "(my-proc 3 4)") global-env)
-
-;; (my-eval-wrap (parse "(let ((x 3)) x)") global-env)
-;; (my-eval-wrap (parse "(let ((x 3) (y 5)) (+ x y))") global-env)
-;; (my-eval-wrap (parse "(let ((x 3) (y 5)) (my-proc 100 200))") global-env)
-
-
-;; ;; test dynamic binding
-
-;; (my-eval-wrap (parse "(define x 3)") global-env)
-;; (my-eval-wrap (parse "(define print-x (lambda () x))") global-env)
-
-;; (my-eval-wrap (parse "(print-x)") global-env)
-;; ;; ^ from global -> x=3
-
-;; (my-eval-wrap (parse "(let ((x 5)) (print-x))") global-env)
-;; ;; ^from last definition -> x=5
