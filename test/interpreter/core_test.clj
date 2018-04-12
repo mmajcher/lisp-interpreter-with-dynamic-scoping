@@ -6,13 +6,11 @@
 (defmacro eval-my-language [& forms]
   "This macro allows me to use my own language inside Clojure.
 
-It turns given forms into strings, evaluates them and returns result
-of the last evaluated form."
-  (let [forms (map str forms)
+It turns given forms into strings, joins them and passes to high-level
+intepret function."
+  (let [forms (clojure.string/join " " (map str forms))
         clean-env (get-clean-env)]
-    (last (map
-           (fn [expr] (interpret expr clean-env))
-           forms))))
+    (interpret forms clean-env)))
 
 
 (deftest interpreter-test

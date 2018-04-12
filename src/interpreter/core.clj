@@ -2,7 +2,7 @@
   (:gen-class)
   (require [interpreter.repl-reader :as repl-reader]))
 
-(declare my-eval-wrap)
+(declare my-eval-statements-seq-wrap)
 (declare global-env)
 (declare interpret)
 
@@ -28,19 +28,25 @@
         (println "got:" stmt)
         (println "result: " (interpret stmt global-env))))))
 
-(defn parse [raw]
-  (read-string raw))
-
-(defn interpret [some-str env]
-  (try
-    (let [parsed (parse some-str)]
-      (str (my-eval-wrap parsed env)))
-    (catch Exception e
-      (let [] (println (.getMessage e))))))
-
 (defn err [msg]
   (throw (Exception. msg)))
 
+
+;; high-level functions (meant to work string -> string)
+
+(defn interpret [some-str env]
+  (defn parse [raw-str]
+    (read-string raw-str))
+  (defn parse-possibly-multiple-statements [raw-str]
+    "Interpreted string (possibly sequence of statements) is being
+      wrapped in parens, because parse (read-string) only reads one
+      form (list of statements in this case)."
+    (parse (str \( " " some-str " " \) )))
+  (try
+    (let [parsed-statements (parse-possibly-multiple-statements some-str)]
+      (str (my-eval-statements-seq-wrap parsed-statements env)))
+    (catch Exception e
+      (let [] (println (.getMessage e))))))
 
 ;; variables
 
@@ -110,6 +116,11 @@
 ;; INTERPRETER
 
 (declare my-apply)
+(declare my-eval)
+
+(defn my-eval-statements-seq [statements env]
+  (last
+   (doall (map #(my-eval % env) statements))))
 
 (defn my-eval [exp env]
   (let [type (exp-type exp)]
@@ -181,7 +192,7 @@
 
 ;; INTERFACE
 
-(defn my-eval-wrap [& args]
+(defn my-eval-statements-seq-wrap [statements-seq env]
   "Avoid printing return value when possibly harmful.
 
 When my-eval returns an environment map, it might contain circular
@@ -195,7 +206,7 @@ E.g.:
 global-env now has a reference to proc and proc references global-env.
 We'd better not try to print that.
 "
-  (let [result (apply my-eval args)]
+  (let [result (my-eval-statements-seq statements-seq env)]
     (if (not (map? result))
       result
       'ok)))
