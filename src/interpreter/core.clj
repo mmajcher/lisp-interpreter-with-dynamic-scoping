@@ -2,9 +2,10 @@
   (:gen-class)
   (require [interpreter.repl-reader :as repl-reader]))
 
-(declare my-eval-statements-seq-wrap)
 (declare global-env)
+
 (declare interpret)
+(declare interpret-multiple-statements)
 
 (defn -main
   [& args]
@@ -20,7 +21,7 @@
   (if (should-read-from-file?)
     ;; file
     (let [statements (slurp (read-from-file-filename))]
-      (let [result (interpret statements global-env)]
+      (let [result (interpret-multiple-statements statements global-env)]
         (println "result: " result)))
     ;; repl
     (while true
@@ -34,19 +35,22 @@
 
 ;; high-level functions (meant to work string -> string)
 
+(declare my-eval-wrap)
+
 (defn interpret [some-str env]
-  (defn parse [raw-str]
+  "Interpret single statement passed as string."
+  (defn parse-single-statement [raw-str]
     (read-string raw-str))
-  (defn parse-possibly-multiple-statements [raw-str]
-    "Interpreted string (possibly sequence of statements) is being
-      wrapped in parens, because parse (read-string) only reads one
-      form (list of statements in this case)."
-    (parse (str \( " " some-str " " \) )))
   (try
-    (let [parsed-statements (parse-possibly-multiple-statements some-str)]
-      (str (my-eval-statements-seq-wrap parsed-statements env)))
+    (let [parsed-statement (parse-single-statement some-str)]
+      (str (my-eval-wrap parsed-statement env)))
     (catch Exception e
       (let [] (println (.getMessage e))))))
+
+(defn interpret-multiple-statements [statements env]
+  "Make a single (begin X Y Z ... ) statement and interpret that."
+  (let [compound-statement (str "(begin " statements ")")]
+    (interpret compound-statement env)))
 
 ;; variables
 
@@ -106,6 +110,7 @@
           'unquote 'unquoting
           'quote 'quoting
           'if 'if
+          'begin 'begin
           'application)
         (symbol? exp) 'variable
         (number? exp) 'number
@@ -118,16 +123,18 @@
 (declare my-apply)
 (declare my-eval)
 
-(defn my-eval-statements-seq [statements env]
-  (last
-   (doall (map #(my-eval % env) statements))))
-
 (defn my-eval [exp env]
   (let [type (exp-type exp)]
     (condp = type
       'variable (find-variable env exp)
       'number exp
       'quote (rest exp)
+
+      'begin
+      (let [statements (rest exp)]
+        (last (doall
+               (map (fn [statement] (my-eval statement env))
+                    statements))))
 
       'quoting (rest exp)
 
@@ -192,8 +199,8 @@
 
 ;; INTERFACE
 
-(defn my-eval-statements-seq-wrap [statements-seq env]
-  "Avoid printing return value when possibly harmful.
+(defn my-eval-wrap [statement env]
+  "Wrapper is meant to avoid printing return value when possibly harmful.
 
 When my-eval returns an environment map, it might contain circular
 references. REPL will overflow the stack during an attempt to print
@@ -204,9 +211,8 @@ E.g.:
 {... :proc-body (+ 2 x) ... :proc-env global-env}
 
 global-env now has a reference to proc and proc references global-env.
-We'd better not try to print that.
-"
-  (let [result (my-eval-statements-seq statements-seq env)]
+We'd better not try to print that."
+  (let [result (my-eval statement env)]
     (if (not (map? result))
       result
       'ok)))

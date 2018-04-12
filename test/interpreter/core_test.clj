@@ -10,7 +10,7 @@ It turns given forms into strings, joins them and passes to high-level
 intepret function."
   (let [forms (clojure.string/join " " (map str forms))
         clean-env (get-clean-env)]
-    (interpret forms clean-env)))
+    (interpret-multiple-statements forms clean-env)))
 
 
 (deftest interpreter-test
