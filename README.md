@@ -9,15 +9,21 @@ An attempt to construct a simple LISP interpreter.
 ~~Using Leiningen: `lein run` (you need both Clojure and Leiningen installed)~~
 
 1. Download standalone jar file (^ use _release_ link above).
-2. `java -jar interpreter-standalone.jar`
+2. `java -jar interpreter-standalone.jar` for REPL
+
+Jar file accepts filename argument to run code from file. The value of
+evaluation of the last statement in the file will be printed out.
 
 ## Language
 
 ### Syntax
 
-At the moment, REPL only accepts statements contained within one line.
+REPL accepts multi-line statements. In last line of the
+statement, any input after top-level enclosing statement will be
+truncated.
 
-Interpreter accepts following syntax:
+
+Here are some examples of the syntax:
 
 ```
 (+ 2 2)
@@ -88,11 +94,14 @@ definition of the variable.
 - built-in predicates:
 
   `= not > < >= <=`
+  
+- begin 
 
+  `(begin statements)`
 
 
 ## TODO
 
 - ~~control flow forms~~
-- multi-line input in REPL
+- ~~multi-line input in REPL~~
 - own parser
