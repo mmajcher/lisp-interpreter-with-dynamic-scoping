@@ -102,7 +102,7 @@
 
 (defn exp-type [exp]
   (cond (and (list? exp) (empty? exp)) 'empty-list
-        (list? exp)
+        (or (list? exp) (seq? exp))
         (condp = (first exp)
           'define 'definition
           'lambda 'make-lambda
@@ -155,15 +155,16 @@
         'defined)
 
       'make-lambda
-      (let [[_ args-list proc-body] exp]
-        (make-procedure args-list proc-body env))
+      (let [[_ args-list & proc-body] exp]
+        (let [proc-body-begin `(~'begin  ~@proc-body)]
+          (make-procedure args-list proc-body-begin env)))
 
       'let
-      (let [[_ pairs let-body] exp]
+      (let [[_ pairs & let-body] exp]
         (let* [params (map first pairs)
                args (map second pairs)
                args-vals (map #(my-eval % env) args)
-               let-procedure (make-procedure params let-body env)]
+               let-procedure (make-procedure params `(~'begin ~@let-body) env)]
           (my-apply let-procedure args-vals env)))
 
       'application

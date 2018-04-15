@@ -65,5 +65,26 @@ intepret function."
             (define get-x (lambda () x))
             (let ((x 7))
               (get-x))
-            )))))
+            ))))
+  (testing "multiple-statemens inside let"
+    (is (= "7"
+           (eval-my-language
+            (let ((x 3))
+              (+ x 1)
+              (+ x 4)
+              )))))
+  (testing "multiple-statements inside lambda"
+    (is (= "6"
+           (eval-my-language
+            (define proc (lambda (x)
+                                 (define x (* 2 x))
+                                 x))
+            (proc 3))))
+    (is (= "7"
+           (eval-my-language
+            (define proc (lambda (x)
+                                 (define x (* 2 x))
+                                 (define x (+ 1 x))
+                                 x))
+            (proc 3))))))
 
