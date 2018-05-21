@@ -7,27 +7,28 @@
 (declare interpret)
 (declare interpret-multiple-statements)
 
-(defn -main
-  [& args]
-
-  (println "READY ...")
+(defn -main [& args]
 
   (defn should-read-from-file? []
     (> (count args) 0))
 
-  (defn read-from-file-filename []
+  (defn get-filename []
     (first args))
 
+
+  (println "READY ...")
+
   (if (should-read-from-file?)
-    ;; file
-    (let [statements (slurp (read-from-file-filename))]
+    ;; FILE - read, execute, print last evaluation result
+    (let [statements (slurp (get-filename))]
       (let [result (interpret-multiple-statements statements global-env)]
         (println "result: " result)))
-    ;; repl
+    ;; REPL - loop; read & eval one stmt at a time
     (while true
       (let [stmt (repl-reader/get-statement)]
         (println "got:" stmt)
         (println "result: " (interpret stmt global-env))))))
+
 
 (defn err [msg]
   (throw (Exception. msg)))
@@ -37,15 +38,15 @@
 
 (declare my-eval-wrap)
 
-(defn interpret [some-str env]
+(defn interpret [statement env]
   "Interpret single statement passed as string."
   (defn parse-single-statement [raw-str]
     (read-string raw-str))
   (try
-    (let [parsed-statement (parse-single-statement some-str)]
-      (str (my-eval-wrap parsed-statement env)))
-    (catch Exception e
-      (let [] (println (.getMessage e))))))
+    (let* [parsed-statement (parse-single-statement statement)
+           result (my-eval-wrap parsed-statement env)]
+      (str result))
+    (catch Exception e (println (.getMessage e)))))
 
 (defn interpret-multiple-statements [statements env]
   "Make a single (begin X Y Z ... ) statement and interpret that."
@@ -102,6 +103,7 @@
 
 (defn exp-type [exp]
   (cond (and (list? exp) (empty? exp)) 'empty-list
+
         (or (list? exp) (seq? exp))
         (condp = (first exp)
           'define 'definition
@@ -112,6 +114,7 @@
           'if 'if
           'begin 'begin
           'application)
+
         (symbol? exp) 'variable
         (number? exp) 'number
         (= (first exp) 'quote) 'quote
