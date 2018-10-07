@@ -3,26 +3,30 @@
   (require [interpreter.repl-reader :as repl-reader]))
 
 (declare global-env)
-
 (declare interpret)
 (declare interpret-multiple-statements)
 
-(defn -main [& args]
+
+;; MAIN
+
+(defn -main [& cli-args]
 
   (defn should-read-from-file? []
-    (> (count args) 0))
+    (> (count cli-args) 0))
 
   (defn get-filename []
-    (first args))
+    (first cli-args))
 
 
   (println "READY ...")
 
   (if (should-read-from-file?)
+
     ;; FILE - read, execute, print last evaluation result
     (let [statements (slurp (get-filename))]
       (let [result (interpret-multiple-statements statements global-env)]
         (println "result: " result)))
+
     ;; REPL - loop; read & eval one stmt at a time
     (while true
       (let [stmt (repl-reader/get-statement)]
@@ -30,9 +34,10 @@
         (println "result: " (interpret stmt global-env))))))
 
 
+;; helpers
+
 (defn err [msg]
   (throw (Exception. msg)))
-
 
 ;; high-level functions (meant to work string -> string)
 
@@ -193,7 +198,7 @@
            proc-env :env} procedure
           apply-env (create-frame-pointing-to caller-env)]
       (if (not (= (count proc-params) (count args)))
-        (err "wrong number of arguments: " args " ;; params: " proc-params))
+        (err (str "wrong number of arguments: " args " ;; params: " proc-params)))
       (doall (map (fn [param arg]
                     (define-variable param apply-env arg))
                   proc-params
